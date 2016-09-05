@@ -16,6 +16,27 @@ def getPixels(image):
             pixels.append(image.getpixel(xy))
     return pixels
 
+def getPixelsFromFile(fileContents):
+    old_index_of_comma = 0;
+    pixels = []
+    fileContents = str(fileContents)
+    while(True):
+        try:
+            index_of_comma = fileContents.index(",", (old_index_of_comma + 1)) 
+            pixels.append(fileContents[old_index_of_comma + 2:index_of_comma].split())
+            old_index_of_comma = index_of_comma
+        except ValueError:
+            break
+    return pixels
+ 
+def writeImageData(image):
+    data = ""
+    pixels = getPixels(image)
+    
+    for pixelData in pixels:
+        data += str(pixelData[0]) + " " + str(pixelData[2]) + " " + str(pixelData[2]) + ", "
+    return data
+
 #Assign command line arguments
 if len(argv) is not 2 and argv[0] is not "":
     print("Usage: file path or url to image")
@@ -46,7 +67,10 @@ for image in glob.glob(os.getenv("HOME") + "/Pictures/*"):
             #Save the image to the same folder this script is in
             index_of_last_slash = file.rindex("/")
             picture_name = file[index_of_last_slash + 1:]
-            img.save(path_of_script + folder_name + picture_name + "_scaled", "BMP")
+
+            with open(path_of_script + folder_name + picture_name + "_scaled.imgdat", "w+") as f:
+                f.write(writeImageData(img))
+            
             del img 
 
 #Try opening the given path as a file
@@ -81,16 +105,22 @@ pixels = getPixels(img)
 
 #Compare to the other scaled images to see if there is a match
 for scaled_image in glob.glob(path_of_script + folder_name + "*"):
-    working_image = Image.open(scaled_image)
+    with open(scaled_image, encoding = "ISO-8859-1") as f:
+        count = 0
+        match = True
+        
+        content = f.readlines()
+        filePixels = getPixelsFromFile(content)
 
-    count = 0
-    match = True
-    for pixel in getPixels(working_image):
-        if pixel != pixels[count]:
-            print(str(pixel) + " != " + str(pixels[count]))
-            match = False
-            break
-        count += 1
-    if match:
-        print("Showing image")
-        working_image.show()
+        print("file pixels")
+        print(filePixels)
+        print("pixels")
+        print(pixels)
+    
+        for pixel in filePixels:
+            if pixel != pixels[count]:
+                match = False
+                break
+            count += 1
+        if match:
+            print("ITS A MATCH")
